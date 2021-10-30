@@ -3,60 +3,103 @@
 void pog_init(uintptr_t* heap_start, size_t heap_size,
               pog_chunk* alloced_chunks_start, size_t alloced_chunks_size,
               pog_chunk* freed_chunks_start, size_t freed_chunks_size,
-              int (*expand_function)(size_t words)) {
-    metadata = &(pog_metadata){
-            .start = heap_start,
-            .end = (uintptr_t *) heap_start[heap_size - 1],
-            .expand_function = expand_function
-    };
-
-    alloced_chunks = alloced_chunks_start;
-    alloced_max_size = alloced_chunks_size;
-
-    freed_chunks = freed_chunks_start;
-    freed_max_size = freed_chunks_size;
-
-    freed_chunks[freed_curr_size++] = (pog_chunk){
+              int (*expand_function)(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size)) {
+    metadata = &(pog_metadata) {
         .start = heap_start,
-        .size = heap_size
+        .end = (uintptr_t *) heap_start[heap_size - 1],
+        .expand_function = expand_function
     };
+
+    alloced_chunks_list = (pog_chunk_list) {
+        .chunks = alloced_chunks_start,
+        .curr_size = 0,
+        .max_size = alloced_chunks_size
+    };
+
+    freed_chunks_list = (pog_chunk_list) {
+            .chunks = freed_chunks_start,
+            .curr_size = 0,
+            .max_size = freed_chunks_size
+    };
+
+    pog_chunk_insert(&freed_chunks_list, (pog_chunk) {
+            .start = heap_start,
+            .size = heap_size
+    });
 }
 
 void *pog_malloc(size_t size_bytes) {
+    //TODO: test all of the edge cases
+
     if (size_bytes == 0) {
         return NULL;
     }
 
     const size_t size_words = (size_bytes + (sizeof(uintptr_t) - 1)) / sizeof(uintptr_t);
 
-    pog_chunk* best_fit_chunk = pog_chunk_first_free(size_words, freed_chunks, freed_curr_size);
+    size_t first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
 
-    if (best_fit_chunk->start == NULL) {
+    if (first_free_chunk_idx == -1) {
         //If no best fit was found, try to compress freed chunks and try again
-        pog_chunk_compress(freed_chunks, &freed_curr_size, freed_max_size);
-        best_fit_chunk = pog_chunk_first_free(size_words, freed_chunks, freed_curr_size);
+        pog_chunk_compress(&freed_chunks_list);
+        first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
-    if (best_fit_chunk->start == NULL) {
-        //If still no chunk was found, expand the heap space
-        if(!metadata->expand_function(size_words)) {
+    if (first_free_chunk_idx == -1) {
+        size_t alloced_max_size_before = alloced_chunks_list.max_size;
+        size_t freed_max_size_before = freed_chunks_list.max_size;
+
+        //If still no chunks was found, expand the heap space
+        if(!metadata->expand_function(size_words, &alloced_chunks_list.max_size, &freed_chunks_list.max_size)) {
             //Something went wrong while expanding the heap space :(
             exit(1);
         }
 
-        //If the expansion was successful, we can also expand the max size
-        //(we expect the user to also expand the alloced and freed array)
-        alloced_max_size += size_words;
-        freed_max_size += size_words;
+        //If the expansion was successful, we also expect the freed size to have increased
+        //(increasing the size of alloced chunks is optional
 
-        best_fit_chunk = pog_chunk_first_free(size_words, freed_chunks, freed_curr_size);
+        assert(alloced_chunks_list.max_size >= alloced_max_size_before);
+        assert(freed_chunks_list.max_size > freed_max_size_before);
+
+        pog_chunk_insert(&freed_chunks_list, (pog_chunk) {
+            .start = (uintptr_t *) (freed_chunks_list.chunks + freed_chunks_list.max_size),
+            .size = size_words
+        });
+
+        first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
-    assert(best_fit_chunk->start != NULL);
+    assert(first_free_chunk_idx != -1);
 
-    //TODO
+    pog_chunk first_free_chunk = freed_chunks_list.chunks[first_free_chunk_idx];
+    if (first_free_chunk.size > size_words) {
+        //remove old chunk
+        pog_chunk_remove(&freed_chunks_list, first_free_chunk_idx);
 
-    return NULL;
+        //add new, smaller chunk to freed chunks
+        pog_chunk new_chunk = (pog_chunk) {
+            .size = first_free_chunk.size - size_words,
+            .start = first_free_chunk.start + size_words
+        };
+        pog_chunk_insert(&freed_chunks_list, new_chunk);
+
+        //add chunk to alloced chunks
+        pog_chunk alloced_chunk = (pog_chunk) {
+            .size = size_words,
+            .start = first_free_chunk.start
+        };
+        pog_chunk_insert(&alloced_chunks_list, alloced_chunk);
+
+        return alloced_chunk.start;
+    } else {
+        //remove chunk from freed chunks
+        pog_chunk_remove(&freed_chunks_list, first_free_chunk_idx);
+
+        //insert chunk into alloced
+        pog_chunk_insert(&alloced_chunks_list, first_free_chunk);
+
+        return first_free_chunk.start;
+    }
 }
 
 void pog_free(void *ptr) {
