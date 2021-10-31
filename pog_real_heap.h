@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include "pogmalloc.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #ifndef POGMALLOC_POG_REAL_HEAP_H
 #define POGMALLOC_POG_REAL_HEAP_H
 
@@ -28,7 +30,6 @@ int real_heap_expand(size_t words, size_t* alloced_chunks_size, size_t* freed_ch
 }
 
 void pog_real_heap_init() {
-    //TODO: fix start pointer alignment
     void* heap_start = sbrk(0);
     sbrk((int)real_heap_size_words * (int)sizeof(uintptr_t));
 
@@ -40,10 +41,12 @@ void pog_real_heap_init() {
              &real_freed[0], real_heap_size_words * 8,
              &real_heap_expand);
 
-    //leak a single word to properly align brk
-    //idk why this works and at this point I'm too scared to ask
-    pog_malloc(1);
+    //HACK: sometimes, sbrk(0) gives back a weird address space; leak two words to properly align brk
+    //idk why this works and at this point I'm too afraid to ask
+    pog_malloc(16);
 }
 
 
 #endif //POGMALLOC_POG_REAL_HEAP_H
+
+#pragma clang diagnostic pop
