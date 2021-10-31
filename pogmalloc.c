@@ -1,3 +1,4 @@
+#include <memory.h>
 #include "pogmalloc.h"
 
 void pog_init(uintptr_t* heap_start, size_t heap_size,
@@ -118,7 +119,7 @@ void pog_free(void *ptr) {
 
     pog_chunk freed_chunk = alloced_chunks_list.chunks[idx];
 
-    for (int i = 0; i < freed_chunk.size; ++i) {
+    for (size_t i = 0; i < freed_chunk.size; ++i) {
         freed_chunk.start[i] = 0;
     }
 
@@ -131,6 +132,27 @@ void pog_squash() {
     pog_chunk_squash(&freed_tmp_chunks_list, &freed_chunks_list);
     freed_chunks_list = freed_tmp_chunks_list;
 }
+
+void* pog_realloc(void* ptr, size_t size_bytes) {
+    size_t idx = pog_chunk_by_ptr(&alloced_chunks_list, ptr);
+    assert(idx != (size_t) -1);
+
+    const size_t size_words = (size_bytes + (sizeof(uintptr_t) - 1)) / sizeof(uintptr_t);
+
+    if (size_words == alloced_chunks_list.chunks[idx].size) {
+        return ptr;
+    }
+
+    size_t copy_amount = size_words > alloced_chunks_list.chunks[idx].size ?
+            alloced_chunks_list.chunks[idx].size * (size_t) sizeof(uintptr_t) :
+            size_bytes;
+
+    void* new_ptr = pog_malloc(size_bytes);
+    memcpy(new_ptr, alloced_chunks_list.chunks[idx].start, copy_amount);
+    pog_free(ptr);
+    return new_ptr;
+}
+
 
 void pog_debug() {
     printf("--------------------------------------------\n");

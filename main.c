@@ -22,6 +22,18 @@ int main() {
 
     pog_debug();
 
+    b = pog_realloc(b, sizeof(char) * 18);
+    strcpy(b + 8, "oo bar");
+    printf("%s\n", b);
+
+    pog_debug();
+
+    b = pog_realloc(b, sizeof(char) * 10);
+    strcpy(b, " world foo");
+    printf("%s\n", b);
+
+    pog_debug();
+
     pog_free(a);
     pog_free(b);
     pog_free(c);
