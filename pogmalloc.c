@@ -3,11 +3,11 @@
 void pog_init(uintptr_t* heap_start, size_t heap_size,
               pog_chunk* alloced_chunks_start, size_t alloced_chunks_size,
               pog_chunk* freed_chunks_start, size_t freed_chunks_size,
-              int (*expand_function)(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size)) {
-    metadata = &(pog_metadata) {
+              expand_function_t expand_function) {
+    metadata = (pog_metadata) {
         .start = heap_start,
         .end = (uintptr_t *) heap_start[heap_size - 1],
-        .expand_function = expand_function
+        .expand_function = (void*)expand_function
     };
 
     alloced_chunks_list = (pog_chunk_list) {
@@ -50,7 +50,8 @@ void *pog_malloc(size_t size_bytes) {
         size_t freed_max_size_before = freed_chunks_list.max_size;
 
         //If still no chunks was found, expand the heap space
-        if(!metadata->expand_function(size_words, &alloced_chunks_list.max_size, &freed_chunks_list.max_size)) {
+        expand_function_t fn = (expand_function_t) metadata.expand_function;
+        if(fn(size_words, &alloced_chunks_list.max_size, &freed_chunks_list.max_size) != 0) {
             //Something went wrong while expanding the heap space :(
             exit(1);
         }

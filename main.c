@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "pog_static_heap.h"
+#include "pog_real_heap.h"
 
 int main() {
+    //pog_real_heap_init();
+
     pog_static_heap_init();
 
     char* a = pog_malloc(sizeof(char) * 5);

@@ -17,14 +17,14 @@ pog_chunk freed[HEAP_CAP_WORDS] = {0};
 
 int fixed_heap_expand(size_t words, size_t *pInt, size_t *pInt1) {
     assert(0 && "Static heap is not expandable");
-    return 0;
+    return 1;
 }
 
 void pog_static_heap_init() {
     pog_init(&heap[0], HEAP_CAP_WORDS,
              &alloced[0], HEAP_CAP_WORDS,
              &freed[0], HEAP_CAP_WORDS,
-             fixed_heap_expand);
+             &fixed_heap_expand);
 }
 
 #endif //POGMALLOC_POG_STATIC_HEAP_H

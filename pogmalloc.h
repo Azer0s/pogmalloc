@@ -7,14 +7,16 @@
 #define POGMALLOC_POGMALLOC_H
 
 #pragma region data
+typedef int (*expand_function_t)(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size);
+
 typedef struct {
     uintptr_t* start;
     uintptr_t* end;
     size_t size;
-    int (*expand_function)(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size);
+    void* expand_function;
 } pog_metadata;
 
-static pog_metadata* metadata = NULL;
+static pog_metadata metadata = {0};
 
 typedef struct {
     uintptr_t* start;
@@ -54,7 +56,7 @@ void pog_chunk_debug(pog_chunk_list list, const char *name);
 void pog_init(uintptr_t* heap_start, size_t heap_size,
               pog_chunk* alloced_chunks_start, size_t alloced_chunks_size,
               pog_chunk* freed_chunks_start, size_t freed_chunks_size,
-              int (*expand_function)(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size));
+              expand_function_t expand_function);
 
 /**
  * Allocates a chunk of memory on the heap
