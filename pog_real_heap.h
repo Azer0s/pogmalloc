@@ -39,6 +39,10 @@ void pog_real_heap_init() {
              &real_alloced[0], real_heap_size_words * 8,
              &real_freed[0], real_heap_size_words * 8,
              &real_heap_expand);
+
+    //leak a single word to properly align brk
+    //idk why this works and at this point I'm too scared to ask
+    pog_malloc(1);
 }
 
 
