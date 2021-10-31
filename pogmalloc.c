@@ -46,14 +46,14 @@ void *pog_malloc(size_t size_bytes) {
 
     size_t first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
 
-    if (first_free_chunk_idx == -1) {
+    if (first_free_chunk_idx == (size_t) -1) {
         //If no best fit was found, try to compress freed chunks and try again
         pog_chunk_squash(&freed_tmp_chunks_list, &freed_chunks_list);
         freed_chunks_list = freed_tmp_chunks_list;
         first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
-    if (first_free_chunk_idx == -1) {
+    if (first_free_chunk_idx == (size_t) -1) {
         size_t alloced_max_size_before = alloced_chunks_list.max_size;
         size_t freed_max_size_before = freed_chunks_list.max_size;
 
@@ -78,7 +78,7 @@ void *pog_malloc(size_t size_bytes) {
         first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
-    assert(first_free_chunk_idx != -1);
+    assert(first_free_chunk_idx != (size_t) -1);
 
     pog_chunk first_free_chunk = freed_chunks_list.chunks[first_free_chunk_idx];
     if (first_free_chunk.size > size_words) {
@@ -114,7 +114,7 @@ void *pog_malloc(size_t size_bytes) {
 void pog_free(void *ptr) {
     //get the memory chunk of the ptr
     size_t idx = pog_chunk_by_ptr(&alloced_chunks_list, ptr);
-    assert(idx != -1);
+    assert(idx != (size_t) -1);
 
     pog_chunk freed_chunk = alloced_chunks_list.chunks[idx];
 

@@ -1,7 +1,7 @@
 #include "pogmalloc.h"
 
 size_t pog_chunk_first_free(pog_chunk_list* list, size_t size_words) {
-    for (int i = 0; i < list->curr_size; ++i) {
+    for (size_t i = 0; i < list->curr_size; ++i) {
         if (list->chunks[i].size >= size_words) {
             return i;
         }
@@ -10,9 +10,8 @@ size_t pog_chunk_first_free(pog_chunk_list* list, size_t size_words) {
     return -1;
 }
 
-
 size_t pog_chunk_by_ptr(pog_chunk_list *list, void *ptr) {
-    for (int i = 0; i < list->curr_size; ++i) {
+    for (size_t i = 0; i < list->curr_size; ++i) {
         if (list->chunks[i].start == ptr) {
             return i;
         }
@@ -20,7 +19,6 @@ size_t pog_chunk_by_ptr(pog_chunk_list *list, void *ptr) {
 
     return -1;
 }
-
 
 void pog_chunk_insert(pog_chunk_list* list, pog_chunk to_insert) {
     assert(list->curr_size < list->max_size);

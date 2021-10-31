@@ -16,7 +16,11 @@ pog_chunk alloced[HEAP_CAP_WORDS] = {0};
 pog_chunk freed[HEAP_CAP_WORDS] = {0};
 pog_chunk freed_tmp[HEAP_CAP_WORDS] = {0};
 
-int fixed_heap_expand(size_t words, size_t *pInt, size_t *pInt1) {
+int fixed_heap_expand(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size) {
+    (void) words;
+    (void) alloced_chunks_size;
+    (void) freed_chunks_size;
+
     assert(0 && "Static heap is not expandable");
     return 1;
 }
