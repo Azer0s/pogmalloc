@@ -118,6 +118,10 @@ void pog_free(void *ptr) {
 
     pog_chunk freed_chunk = alloced_chunks_list.chunks[idx];
 
+    for (int i = 0; i < freed_chunk.size; ++i) {
+        freed_chunk.start[i] = 0;
+    }
+
     //move the memory chunk to the freed list
     pog_chunk_remove(&alloced_chunks_list, idx);
     pog_chunk_insert(&freed_chunks_list, freed_chunk);

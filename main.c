@@ -12,8 +12,8 @@ int main() {
     strcpy(a, "Hello");
     printf("%s", a);
 
-    char* b = pog_malloc(sizeof(char) * 6);
-    strcpy(b, " world");
+    char* b = pog_malloc(sizeof(char) * 10);
+    strcpy(b, " world foo");
     printf("%s", b);
 
     char* c = pog_malloc(sizeof(char) * 2);
