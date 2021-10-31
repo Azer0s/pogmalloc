@@ -2,10 +2,16 @@
 
 A poggers malloc implementation
 
-### Supports
+### Features
 
 * Static allocator
 * Real heap allocator (via `sbrk(2)`)
+* Works on ARM & x86_64
+* Works with GCC and clang 
+
+### Limitations
+
+* No packed structs (tho, this isn't really tested yet)
 
 ### Credits
 
