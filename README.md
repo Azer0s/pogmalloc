@@ -1,4 +1,4 @@
-# pogmalloc
+# pogmalloc(3)
 
 A poggers malloc implementation
 
