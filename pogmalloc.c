@@ -41,7 +41,7 @@ void *pog_malloc(size_t size_bytes) {
 
     if (first_free_chunk_idx == -1) {
         //If no best fit was found, try to compress freed chunks and try again
-        pog_chunk_compress(&freed_chunks_list);
+        pog_chunk_squash(&freed_chunks_list);
         first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
@@ -103,5 +103,26 @@ void *pog_malloc(size_t size_bytes) {
 }
 
 void pog_free(void *ptr) {
+    //get the memory chunk of the ptr
+    size_t idx = pog_chunk_by_ptr(&alloced_chunks_list, ptr);
+    assert(idx != -1);
 
+    pog_chunk freed_chunk = alloced_chunks_list.chunks[idx];
+
+    //move the memory chunk to the freed list
+    pog_chunk_remove(&alloced_chunks_list, idx);
+    pog_chunk_insert(&freed_chunks_list, freed_chunk);
+}
+
+void pog_free_squash(void *ptr) {
+    pog_free(ptr);
+    pog_chunk_squash(&freed_chunks_list);
+}
+
+void pog_debug() {
+    printf("--------------------------------------------\n");
+    pog_chunk_debug(alloced_chunks_list, "Alloced");
+    printf("--------------------------------------------\n");
+    pog_chunk_debug(freed_chunks_list, "Freed");
+    printf("--------------------------------------------\n");
 }

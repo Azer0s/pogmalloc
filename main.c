@@ -7,16 +7,21 @@ int main() {
 
     char* a = pog_malloc(sizeof(char) * 5);
     strcpy(a, "Hello");
-
-    char* b = pog_malloc(sizeof(char) * 5);
-    strcpy(b, "Hello");
-
-    char* c = pog_malloc(sizeof(char) * 5);
-    strcpy(c, "Hello");
-
     printf("%s", a);
 
-    //pog_free(a);
+    char* b = pog_malloc(sizeof(char) * 6);
+    strcpy(b, " world");
+    printf("%s", b);
+
+    char* c = pog_malloc(sizeof(char) * 2);
+    strcpy(c, "!\n");
+    printf("%s", c);
+
+    pog_debug();
+
+    pog_free(a);
+
+    pog_debug();
 
     return 0;
 }
