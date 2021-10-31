@@ -3,6 +3,7 @@
 void pog_init(uintptr_t* heap_start, size_t heap_size,
               pog_chunk* alloced_chunks_start, size_t alloced_chunks_size,
               pog_chunk* freed_chunks_start, size_t freed_chunks_size,
+              pog_chunk* freed_tmp_chunks_start, size_t freed_tmp_chunks_size,
               expand_function_t expand_function) {
     metadata = (pog_metadata) {
         .start = heap_start,
@@ -17,9 +18,15 @@ void pog_init(uintptr_t* heap_start, size_t heap_size,
     };
 
     freed_chunks_list = (pog_chunk_list) {
-            .chunks = freed_chunks_start,
-            .curr_size = 0,
-            .max_size = freed_chunks_size
+        .chunks = freed_chunks_start,
+        .curr_size = 0,
+        .max_size = freed_chunks_size
+    };
+
+    freed_tmp_chunks_list = (pog_chunk_list) {
+        .chunks = freed_tmp_chunks_start,
+        .curr_size = 0,
+        .max_size = freed_tmp_chunks_size
     };
 
     pog_chunk_insert(&freed_chunks_list, (pog_chunk) {
@@ -41,7 +48,8 @@ void *pog_malloc(size_t size_bytes) {
 
     if (first_free_chunk_idx == -1) {
         //If no best fit was found, try to compress freed chunks and try again
-        pog_chunk_squash(&freed_chunks_list);
+        pog_chunk_squash(&freed_tmp_chunks_list, &freed_chunks_list);
+        freed_chunks_list = freed_tmp_chunks_list;
         first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
@@ -115,9 +123,9 @@ void pog_free(void *ptr) {
     pog_chunk_insert(&freed_chunks_list, freed_chunk);
 }
 
-void pog_free_squash(void *ptr) {
-    pog_free(ptr);
-    pog_chunk_squash(&freed_chunks_list);
+void pog_squash() {
+    pog_chunk_squash(&freed_tmp_chunks_list, &freed_chunks_list);
+    freed_chunks_list = freed_tmp_chunks_list;
 }
 
 void pog_debug() {

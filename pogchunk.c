@@ -46,8 +46,20 @@ void pog_chunk_remove(pog_chunk_list* list, size_t index) {
     list->curr_size -= 1;
 }
 
-void pog_chunk_squash(pog_chunk_list* list) {
-    assert(0);
+void pog_chunk_squash(pog_chunk_list* dst, pog_chunk_list* src) {
+    dst->curr_size = 0;
+
+    for (size_t i = 0; i < src->curr_size; ++i) {
+        if (dst->curr_size > 0) {
+            if (dst->chunks[dst->curr_size - 1].start + dst->chunks[dst->curr_size - 1].size == src->chunks[i].start) {
+                (&dst->chunks[dst->curr_size - 1])->size += src->chunks[i].size;
+            } else {
+                pog_chunk_insert(dst, src->chunks[i]);
+            }
+        } else {
+            pog_chunk_insert(dst, src->chunks[i]);
+        }
+    }
 }
 
 void pog_chunk_debug(pog_chunk_list list, const char *name) {

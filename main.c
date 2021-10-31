@@ -23,6 +23,12 @@ int main() {
     pog_debug();
 
     pog_free(a);
+    pog_free(b);
+    pog_free(c);
+
+    pog_debug();
+
+    pog_squash();
 
     pog_debug();
 
