@@ -12,7 +12,7 @@ A poggers malloc implementation
 ### Limitations
 
 * No packed structs (tho, this isn't really tested yet)
-* Doesn't work on windows
+* Doesn't work on Windows
 * Kinda flimsy tbh (it's cool and all but don't use it in prod lmao)
 
 ### Credits
