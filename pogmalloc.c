@@ -48,12 +48,16 @@ void *pog_malloc(size_t size_bytes) {
     size_t first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
 
     if (first_free_chunk_idx == (size_t) -1) {
+        TRACE("no best fit found, trying to squash freed chunks\n", NULL);
+
         //If no best fit was found, try to compress freed chunks and try again
         pog_squash();
         first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
     if (first_free_chunk_idx == (size_t) -1) {
+        TRACE("no best fit found, trying to expand heap space\n", NULL);
+
         size_t alloced_max_size_before = alloced_chunks_list.max_size;
         size_t freed_max_size_before = freed_chunks_list.max_size;
 
@@ -81,7 +85,14 @@ void *pog_malloc(size_t size_bytes) {
     assert(first_free_chunk_idx != (size_t) -1);
 
     pog_chunk first_free_chunk = freed_chunks_list.chunks[first_free_chunk_idx];
+
+    TRACE("found best fit at %p of %zu word%s\n", first_free_chunk.start, first_free_chunk.size, first_free_chunk.size > 1 ? "s" : "");
+
     if (first_free_chunk.size > size_words) {
+        TRACE("splitting into two chunks of %zu word%s and %zu word%s\n",
+              size_words, size_words > 1 ? "s" : "",
+              first_free_chunk.size - size_words, (first_free_chunk.size - size_words) > 1 ? "s" : "");
+
         //remove old chunk
         pog_chunk_remove(&freed_chunks_list, first_free_chunk_idx);
 
@@ -116,6 +127,8 @@ void pog_free(void *ptr) {
     size_t idx = pog_chunk_by_ptr(&alloced_chunks_list, ptr);
     assert(idx != (size_t) -1);
 
+    DEBUG("freeing %p\n", ptr);
+
     pog_chunk freed_chunk = alloced_chunks_list.chunks[idx];
 
     for (size_t i = 0; i < freed_chunk.size; ++i) {
@@ -128,6 +141,7 @@ void pog_free(void *ptr) {
 }
 
 void pog_squash() {
+    DEBUG("squashing freed chunks\n", NULL);
     pog_chunk_squash(&tmp_chunks_list, &freed_chunks_list);
     freed_chunks_list = tmp_chunks_list;
 }
@@ -137,6 +151,8 @@ void* pog_realloc(void* ptr, size_t size_bytes) {
     assert(idx != (size_t) -1);
 
     const size_t size_words = (size_bytes + (sizeof(uintptr_t) - 1)) / sizeof(uintptr_t);
+
+    DEBUG("reallocating %p to %zu bytes (%zu word%s) of memory\n", ptr, size_bytes, size_words, size_words > 1 ? "s" : "");
 
     if (size_words == alloced_chunks_list.chunks[idx].size) {
         return ptr;
@@ -216,10 +232,6 @@ void pog_gc_mark_static(void* mem) {
 }
 
 #else
-void pog_gc_collect() {
-    assert(0 && "FEATURE_GC is not enabled");
-}
-
 void pog_gc_collect() {
     assert(0 && "FEATURE_GC is not enabled");
 }

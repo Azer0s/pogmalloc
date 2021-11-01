@@ -6,13 +6,19 @@
 #include <printf.h>
 
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 #define DEBUG(format, ...) \
-printf(ANSI_COLOR_YELLOW "%s:%d@%s ",  __func__, __LINE__, __FILE__); \
+printf(ANSI_COLOR_YELLOW "[DEBUG] %s:%d@%s ",  __func__, __LINE__, __FILE__); \
+printf(format ANSI_COLOR_RESET, __VA_ARGS__)
+
+#define TRACE(format, ...) \
+printf(ANSI_COLOR_CYAN "[TRACE] %s:%d@%s ",  __func__, __LINE__, __FILE__); \
 printf(format ANSI_COLOR_RESET, __VA_ARGS__)
 #else
 #define DEBUG(val, ...)
+#define TRACE(val, ...)
 #endif
 
 #ifndef POGMALLOC_POGMALLOC_H
