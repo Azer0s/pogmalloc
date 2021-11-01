@@ -10,6 +10,7 @@ A poggers malloc implementation
 * Works on ARM & x86_64
 * Works with GCC and clang 
 * GC for static memory
+* Debug and trace logs
 
 ### Limitations
 
