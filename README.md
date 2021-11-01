@@ -7,11 +7,12 @@ A poggers malloc implementation
 * Static allocator
 * Real heap allocator (via `sbrk(2)`)
 * Builtin GC
+  * Can also mark static memory
+  * Can be enabled via define
 * Debug and trace logs
+  * Can be enabled via define
 * Works on ARM & x86_64
 * Works with GCC and clang 
-* GC for static memory
-* GC and debug can be disabled via compiler defines
 
 ### Limitations
 
