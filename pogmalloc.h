@@ -1,7 +1,25 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#if FEATURE_DEBUG
 #include <printf.h>
+
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+#define DEBUG(format, ...) \
+printf(ANSI_COLOR_YELLOW "[DEBUG] %s:%d@%s ",  __func__, __LINE__, __FILE__); \
+printf(format ANSI_COLOR_RESET, __VA_ARGS__)
+
+#define TRACE(format, ...) \
+printf(ANSI_COLOR_CYAN "[TRACE] %s:%d@%s ",  __func__, __LINE__, __FILE__); \
+printf(format ANSI_COLOR_RESET, __VA_ARGS__)
+#else
+#define DEBUG(val, ...)
+#define TRACE(val, ...)
+#endif
 
 #ifndef POGMALLOC_POGMALLOC_H
 #define POGMALLOC_POGMALLOC_H
@@ -31,7 +49,7 @@ typedef struct {
 
 static pog_chunk_list alloced_chunks_list = {0};
 static pog_chunk_list freed_chunks_list = {0};
-static pog_chunk_list freed_tmp_chunks_list = {0};
+static pog_chunk_list tmp_chunks_list = {0};
 #pragma endregion data
 
 #pragma region pog_chunk
@@ -52,14 +70,14 @@ void pog_chunk_debug(pog_chunk_list list, const char *name);
  * @param alloced_chunks_size the size of the allocated chunks array
  * @param freed_chunks_start the start pointer of the freed chunks array
  * @param freed_chunks_size the size of the freed chunks array
- * @param freed_tmp_chunks_start the start pointer of the temporary freed chunks array
- * @param freed_tmp_chunks_size the size of the temporary freed chunks array
+ * @param tmp_chunks_start the start pointer of the temporary chunks array (used for squashing, gc, etc.)
+ * @param tmp_chunks_size the size of the temporary chunks array
  * @param expand_function the function to expand the heap (also expects the freed chunks array to increase)
  */
 void pog_init(uintptr_t* heap_start, size_t heap_size,
               pog_chunk* alloced_chunks_start, size_t alloced_chunks_size,
               pog_chunk* freed_chunks_start, size_t freed_chunks_size,
-              pog_chunk* freed_tmp_chunks_start, size_t freed_tmp_chunks_size,
+              pog_chunk* tmp_chunks_start, size_t tmp_chunks_size,
               expand_function_t expand_function);
 
 /**
@@ -91,7 +109,31 @@ void pog_squash();
  */
 void* pog_realloc(void* ptr, size_t size_bytes);
 
+/**
+ * Prints the alloced and freed memory chunks
+ */
 void pog_debug();
+
+#ifdef FEATURE_GC
+const uintptr_t* stack_base;
+
+uintptr_t** static_mem_ptrs;
+size_t static_mem_curr_size;
+size_t static_mem_max_size;
+
+void pog_gc_static_init(uintptr_t** static_mem_start);
+
+#define pog_gc_init(mem_start, mem_cap) \
+stack_base = (uintptr_t*) __builtin_frame_address(0); \
+static_mem_max_size = mem_cap;          \
+pog_gc_static_init((uintptr_t **) (mem_start))
+#else
+#define pog_gc_init(static_memory_start, static_memory_size) assert(0 && "FEATURE_GC is not enabled")
+#endif
+
+void pog_gc_mark_static(void* mem);
+void pog_gc_collect();
+
 #pragma endregion pogmalloc
 
 #endif //POGMALLOC_POGMALLOC_H

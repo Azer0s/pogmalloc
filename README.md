@@ -6,14 +6,16 @@ A poggers malloc implementation
 
 * Static allocator
 * Real heap allocator (via `sbrk(2)`)
+* Builtin GC
 * Works on ARM & x86_64
 * Works with GCC and clang 
+* GC for static memory
 
 ### Limitations
 
-* No packed structs (tho, this isn't really tested yet)
 * Doesn't work on Windows
 * Kinda flimsy tbh (it's cool and all but don't use it in prod lmao)
+* GC doesn't work for packed structs or obfuscated pointers
 
 ### Credits
 

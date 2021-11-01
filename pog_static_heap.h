@@ -14,7 +14,7 @@ static_assert(HEAP_CAP_BYTES % sizeof(uintptr_t) == 0, "Heap capacity must be di
 uintptr_t heap[HEAP_CAP_WORDS] = {0};
 pog_chunk alloced[HEAP_CAP_WORDS] = {0};
 pog_chunk freed[HEAP_CAP_WORDS] = {0};
-pog_chunk freed_tmp[HEAP_CAP_WORDS] = {0};
+pog_chunk tmp[HEAP_CAP_WORDS] = {0};
 
 int fixed_heap_expand(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size) {
     (void) words;
@@ -29,7 +29,7 @@ void pog_static_heap_init() {
     pog_init(&heap[0], HEAP_CAP_WORDS,
              &alloced[0], HEAP_CAP_WORDS,
              &freed[0], HEAP_CAP_WORDS,
-             &freed_tmp[0], HEAP_CAP_WORDS,
+             &tmp[0], HEAP_CAP_WORDS,
              &fixed_heap_expand);
 }
 
