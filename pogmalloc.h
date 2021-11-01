@@ -4,6 +4,15 @@
 
 #if FEATURE_DEBUG
 #include <printf.h>
+
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+#define DEBUG(format, ...) \
+printf(ANSI_COLOR_YELLOW "%s:%d@%s ",  __func__, __LINE__, __FILE__); \
+printf(format ANSI_COLOR_RESET, __VA_ARGS__)
+#else
+#define DEBUG(val, ...)
 #endif
 
 #ifndef POGMALLOC_POGMALLOC_H
@@ -101,11 +110,22 @@ void pog_debug();
 
 #ifdef FEATURE_GC
 const uintptr_t* stack_base;
-#define pog_gc_init() stack_base = (uintptr_t*) __builtin_frame_address(0)
+
+uintptr_t** static_mem_ptrs;
+size_t static_mem_curr_size;
+size_t static_mem_max_size;
+
+void pog_gc_static_init(uintptr_t** static_mem_start);
+
+#define pog_gc_init(mem_start, mem_cap) \
+stack_base = (uintptr_t*) __builtin_frame_address(0); \
+static_mem_max_size = mem_cap;          \
+pog_gc_static_init((uintptr_t **) (mem_start))
 #else
-#define pog_gc_init() assert(0 && "FEATURE_GC is not enabled")
+#define pog_gc_init(static_memory_start, static_memory_size) assert(0 && "FEATURE_GC is not enabled")
 #endif
 
+void pog_gc_mark_static(void* mem);
 void pog_gc_collect();
 
 #pragma endregion pogmalloc

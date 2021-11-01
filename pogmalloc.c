@@ -43,6 +43,8 @@ void *pog_malloc(size_t size_bytes) {
 
     const size_t size_words = (size_bytes + (sizeof(uintptr_t) - 1)) / sizeof(uintptr_t);
 
+    DEBUG("trying to allocate %zu bytes (%zu word%s) of memory\n", size_bytes, size_words, size_words > 1 ? "s" : "");
+
     size_t first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
 
     if (first_free_chunk_idx == (size_t) -1) {
@@ -183,6 +185,7 @@ void pog_gc_mark_region(const uintptr_t* start, const uintptr_t* end) {
 
 void pog_gc_collect() {
     const uintptr_t *stack_start = (const uintptr_t*)__builtin_frame_address(0);
+    tmp_chunks_list.curr_size = 0;
 
     for (size_t i = 0; i < alloced_chunks_list.curr_size; i++) {
         pog_chunk_insert(&tmp_chunks_list, alloced_chunks_list.chunks[i]);
@@ -191,16 +194,37 @@ void pog_gc_collect() {
     //mark unused pointers on the heap and stack
     pog_gc_mark_region(stack_start, stack_base + 1);
 
-    //TODO: mark unused pointers in static memory
+    //mark unused pointers in static memory
+    pog_gc_mark_region((const uintptr_t *) static_mem_ptrs, (const uintptr_t *) (static_mem_ptrs + static_mem_curr_size));
 
     for (size_t i = 0; i < tmp_chunks_list.curr_size; i++) {
+        DEBUG("%p marked unused\n", tmp_chunks_list.chunks[i].start);
         pog_free(tmp_chunks_list.chunks[i].start);
     }
-
-    pog_squash();
 }
+
+void pog_gc_static_init(uintptr_t** static_mem_start) {
+    static_mem_ptrs = static_mem_start;
+}
+
+void pog_gc_mark_static(void* mem) {
+    assert(static_mem_curr_size < static_mem_max_size);
+    static_mem_ptrs[static_mem_curr_size] = mem;
+    static_mem_curr_size++;
+
+    DEBUG("marked %p as static memory\n", mem);
+}
+
 #else
 void pog_gc_collect() {
+    assert(0 && "FEATURE_GC is not enabled");
+}
+
+void pog_gc_collect() {
+    assert(0 && "FEATURE_GC is not enabled");
+}
+
+void pog_gc_mark_static(void *mem) {
     assert(0 && "FEATURE_GC is not enabled");
 }
 #endif
