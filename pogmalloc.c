@@ -191,6 +191,8 @@ void pog_gc_collect() {
     //mark unused pointers on the heap and stack
     pog_gc_mark_region(stack_start, stack_base + 1);
 
+    //TODO: mark unused pointers in static memory
+
     for (size_t i = 0; i < tmp_chunks_list.curr_size; i++) {
         pog_free(tmp_chunks_list.chunks[i].start);
     }
