@@ -4,9 +4,15 @@
 #include "pog_real_heap.h"
 
 int main() {
+    pog_gc_init();
+
     //pog_real_heap_init();
 
     pog_static_heap_init();
+
+    pog_malloc(80);
+    pog_malloc(80);
+    pog_malloc(80);
 
     char* a = pog_malloc(sizeof(char) * 5);
     strcpy(a, "Hello");
@@ -19,6 +25,10 @@ int main() {
     char* c = pog_malloc(sizeof(char) * 2);
     strcpy(c, "!\n");
     printf("%s", c);
+
+    pog_debug();
+
+    pog_gc_collect();
 
     pog_debug();
 

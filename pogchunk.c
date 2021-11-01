@@ -60,6 +60,7 @@ void pog_chunk_squash(pog_chunk_list* dst, pog_chunk_list* src) {
     }
 }
 
+#if FEATURE_DEBUG
 void pog_chunk_debug(pog_chunk_list list, const char *name) {
     printf("%s Chunks (%zu):\n", name, list.curr_size);
     for (size_t i = 0; i < list.curr_size; ++i) {
@@ -68,3 +69,8 @@ void pog_chunk_debug(pog_chunk_list list, const char *name) {
                list.chunks[i].size);
     }
 }
+#else
+void pog_chunk_debug(pog_chunk_list list, const char *name) {
+    assert(0 && "FEATURE_DEBUG is not enabled");
+}
+#endif

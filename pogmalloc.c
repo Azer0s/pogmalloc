@@ -4,7 +4,7 @@
 void pog_init(uintptr_t* heap_start, size_t heap_size,
               pog_chunk* alloced_chunks_start, size_t alloced_chunks_size,
               pog_chunk* freed_chunks_start, size_t freed_chunks_size,
-              pog_chunk* freed_tmp_chunks_start, size_t freed_tmp_chunks_size,
+              pog_chunk* tmp_chunks_start, size_t tmp_chunks_size,
               expand_function_t expand_function) {
     metadata = (pog_metadata) {
         .start = heap_start,
@@ -24,10 +24,10 @@ void pog_init(uintptr_t* heap_start, size_t heap_size,
         .max_size = freed_chunks_size
     };
 
-    freed_tmp_chunks_list = (pog_chunk_list) {
-        .chunks = freed_tmp_chunks_start,
+    tmp_chunks_list = (pog_chunk_list) {
+        .chunks = tmp_chunks_start,
         .curr_size = 0,
-        .max_size = freed_tmp_chunks_size
+        .max_size = tmp_chunks_size
     };
 
     pog_chunk_insert(&freed_chunks_list, (pog_chunk) {
@@ -37,8 +37,6 @@ void pog_init(uintptr_t* heap_start, size_t heap_size,
 }
 
 void *pog_malloc(size_t size_bytes) {
-    //TODO: test all of the edge cases
-
     if (size_bytes == 0) {
         return NULL;
     }
@@ -49,8 +47,7 @@ void *pog_malloc(size_t size_bytes) {
 
     if (first_free_chunk_idx == (size_t) -1) {
         //If no best fit was found, try to compress freed chunks and try again
-        pog_chunk_squash(&freed_tmp_chunks_list, &freed_chunks_list);
-        freed_chunks_list = freed_tmp_chunks_list;
+        pog_squash();
         first_free_chunk_idx = pog_chunk_first_free(&freed_chunks_list, size_words);
     }
 
@@ -129,8 +126,8 @@ void pog_free(void *ptr) {
 }
 
 void pog_squash() {
-    pog_chunk_squash(&freed_tmp_chunks_list, &freed_chunks_list);
-    freed_chunks_list = freed_tmp_chunks_list;
+    pog_chunk_squash(&tmp_chunks_list, &freed_chunks_list);
+    freed_chunks_list = tmp_chunks_list;
 }
 
 void* pog_realloc(void* ptr, size_t size_bytes) {
@@ -153,7 +150,7 @@ void* pog_realloc(void* ptr, size_t size_bytes) {
     return new_ptr;
 }
 
-
+#if FEATURE_DEBUG
 void pog_debug() {
     printf("--------------------------------------------\n");
     pog_chunk_debug(alloced_chunks_list, "Alloced");
@@ -161,3 +158,47 @@ void pog_debug() {
     pog_chunk_debug(freed_chunks_list, "Freed");
     printf("--------------------------------------------\n");
 }
+#else
+void pog_debug() {
+    assert(0 && "FEATURE_DEBUG is not enabled");
+}
+#endif
+
+#if FEATURE_GC
+void pog_gc_mark_region(const uintptr_t* start, const uintptr_t* end) {
+    for (;start < end; start += 1) {
+        const uintptr_t *p = (const uintptr_t *) *start;
+        for (size_t i = 0; i < alloced_chunks_list.curr_size; ++i) {
+            pog_chunk chunk = alloced_chunks_list.chunks[i];
+            if (chunk.start <= p && p < chunk.start + chunk.size) {
+                size_t idx = pog_chunk_by_ptr(&tmp_chunks_list, chunk.start);
+                if (idx != (size_t) -1) {
+                    pog_chunk_remove(&tmp_chunks_list, idx);
+                    pog_gc_mark_region(chunk.start, chunk.start + chunk.size);
+                }
+            }
+        }
+    }
+}
+
+void pog_gc_collect() {
+    const uintptr_t *stack_start = (const uintptr_t*)__builtin_frame_address(0);
+
+    for (size_t i = 0; i < alloced_chunks_list.curr_size; i++) {
+        pog_chunk_insert(&tmp_chunks_list, alloced_chunks_list.chunks[i]);
+    }
+
+    //mark unused pointers on the heap and stack
+    pog_gc_mark_region(stack_start, stack_base + 1);
+
+    for (size_t i = 0; i < tmp_chunks_list.curr_size; i++) {
+        pog_free(tmp_chunks_list.chunks[i].start);
+    }
+
+    pog_squash();
+}
+#else
+void pog_gc_collect() {
+    assert(0 && "FEATURE_GC is not enabled");
+}
+#endif

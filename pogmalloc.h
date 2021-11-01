@@ -1,7 +1,10 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#if FEATURE_DEBUG
 #include <printf.h>
+#endif
 
 #ifndef POGMALLOC_POGMALLOC_H
 #define POGMALLOC_POGMALLOC_H
@@ -31,7 +34,7 @@ typedef struct {
 
 static pog_chunk_list alloced_chunks_list = {0};
 static pog_chunk_list freed_chunks_list = {0};
-static pog_chunk_list freed_tmp_chunks_list = {0};
+static pog_chunk_list tmp_chunks_list = {0};
 #pragma endregion data
 
 #pragma region pog_chunk
@@ -52,14 +55,14 @@ void pog_chunk_debug(pog_chunk_list list, const char *name);
  * @param alloced_chunks_size the size of the allocated chunks array
  * @param freed_chunks_start the start pointer of the freed chunks array
  * @param freed_chunks_size the size of the freed chunks array
- * @param freed_tmp_chunks_start the start pointer of the temporary freed chunks array
- * @param freed_tmp_chunks_size the size of the temporary freed chunks array
+ * @param tmp_chunks_start the start pointer of the temporary chunks array (used for squashing, gc, etc.)
+ * @param tmp_chunks_size the size of the temporary chunks array
  * @param expand_function the function to expand the heap (also expects the freed chunks array to increase)
  */
 void pog_init(uintptr_t* heap_start, size_t heap_size,
               pog_chunk* alloced_chunks_start, size_t alloced_chunks_size,
               pog_chunk* freed_chunks_start, size_t freed_chunks_size,
-              pog_chunk* freed_tmp_chunks_start, size_t freed_tmp_chunks_size,
+              pog_chunk* tmp_chunks_start, size_t tmp_chunks_size,
               expand_function_t expand_function);
 
 /**
@@ -91,7 +94,20 @@ void pog_squash();
  */
 void* pog_realloc(void* ptr, size_t size_bytes);
 
+/**
+ * Prints the alloced and freed memory chunks
+ */
 void pog_debug();
+
+#ifdef FEATURE_GC
+const uintptr_t* stack_base;
+#define pog_gc_init() stack_base = (uintptr_t*) __builtin_frame_address(0)
+#else
+#define pog_gc_init() assert(0 && "FEATURE_GC is not enabled")
+#endif
+
+void pog_gc_collect();
+
 #pragma endregion pogmalloc
 
 #endif //POGMALLOC_POGMALLOC_H
