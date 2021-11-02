@@ -143,7 +143,13 @@ void pog_free(void *ptr) {
 void pog_squash() {
     DEBUG("squashing freed chunks\n", NULL);
     pog_chunk_squash(&tmp_chunks_list, &freed_chunks_list);
-    freed_chunks_list = tmp_chunks_list;
+
+    //Override freed chunks with tmp chunks
+    freed_chunks_list.curr_size = 0;
+    for (size_t i = 0; i < tmp_chunks_list.curr_size; ++i) {
+        pog_chunk_insert(&freed_chunks_list, tmp_chunks_list.chunks[i]);
+    }
+    //freed_chunks_list = tmp_chunks_list;
 }
 
 void* pog_realloc(void* ptr, size_t size_bytes) {
