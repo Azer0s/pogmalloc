@@ -95,6 +95,24 @@ TEST_CASE("Realloc allocated memory") {
     REQUIRE(freed[1].size == (size_t) 7997);
 }
 
+TEST_CASE("Allocate memory for string") {
+    pog_static_heap_init();
+
+    char *str;
+
+    /* Initial memory allocation */
+    str = (char *) pog_malloc(15);
+    strcpy(str, "tutorialspoint");
+    printf("String = %s,  Address = %u\n", str, str);
+
+    /* Reallocating memory */
+    str = (char *) pog_realloc(str, 25);
+    strcat(str, ".com");
+    printf("String = %s,  Address = %u\n", str, str);
+
+    pog_free(str);
+}
+
 TEST_CASE("GC unused stack pointer") {
     pog_static_heap_init();
     pog_gc_init(NULL, 0);
