@@ -189,18 +189,36 @@ void pog_debug() {
 #endif
 
 #if FEATURE_GC
+void pog_gc_mark_region(const uintptr_t* start, const uintptr_t* end);
+
+int pog_gc_region_find(pog_chunk chunk, const uintptr_t* p) {
+    if (chunk.start <= p && p < chunk.start + chunk.size) {
+        size_t idx = pog_chunk_by_ptr(&tmp_chunks_list, chunk.start);
+        if (idx != (size_t) -1) {
+            pog_chunk_remove(&tmp_chunks_list, idx);
+            pog_gc_mark_region(chunk.start, chunk.start + chunk.size);
+        }
+    }
+}
+
 void pog_gc_mark_region(const uintptr_t* start, const uintptr_t* end) {
     for (;start < end; start += 1) {
         const uintptr_t *p = (const uintptr_t *) *start;
         for (size_t i = 0; i < alloced_chunks_list.curr_size; ++i) {
             pog_chunk chunk = alloced_chunks_list.chunks[i];
-            if (chunk.start <= p && p < chunk.start + chunk.size) {
-                size_t idx = pog_chunk_by_ptr(&tmp_chunks_list, chunk.start);
-                if (idx != (size_t) -1) {
-                    pog_chunk_remove(&tmp_chunks_list, idx);
-                    pog_gc_mark_region(chunk.start, chunk.start + chunk.size);
-                }
-            }
+            pog_gc_region_find(chunk, p);
+        }
+    }
+}
+
+void pog_gc_mark_static_region(const uintptr_t* start, const uintptr_t* end) {
+    for (;start < end; start += 1) {
+        const uintptr_t *p = (const uintptr_t *) *start;
+        if (p == NULL)
+            continue;
+        for (size_t i = 0; i < alloced_chunks_list.curr_size; ++i) {
+            pog_chunk chunk = alloced_chunks_list.chunks[i];
+            pog_gc_region_find(chunk, (const uintptr_t *) *p);
         }
     }
 }
@@ -216,8 +234,15 @@ void pog_gc_collect() {
     //mark unused pointers on the heap and stack
     pog_gc_mark_region(stack_start, stack_base + 1);
 
-    //mark unused pointers in static memory
-    pog_gc_mark_region((const uintptr_t *) static_mem_ptrs, (const uintptr_t *) (static_mem_ptrs + static_mem_curr_size));
+    //you don't need to have static pointers marked
+    if (static_mem_ptrs != NULL) {
+        //mark unused pointers in static memory
+        pog_gc_mark_region((const uintptr_t *) static_mem_ptrs, (const uintptr_t *) (static_mem_ptrs + static_mem_curr_size));
+
+        //in C, the line above works for static pointers, but in  C++ it doesn't for some reason,
+        //and we have to deref the ptr again 🤷‍
+        pog_gc_mark_static_region((const uintptr_t *) static_mem_ptrs, (const uintptr_t *) (static_mem_ptrs + static_mem_curr_size));
+    }
 
     for (size_t i = 0; i < tmp_chunks_list.curr_size; i++) {
         DEBUG("%p marked unused\n", tmp_chunks_list.chunks[i].start);
