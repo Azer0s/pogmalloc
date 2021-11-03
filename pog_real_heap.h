@@ -9,7 +9,7 @@
 #define HEAP_CAP_REAL_CHUNKS 8192
 static pog_chunk real_alloced[HEAP_CAP_REAL_CHUNKS] = {0};
 static pog_chunk real_freed[HEAP_CAP_REAL_CHUNKS] = {0};
-static pog_chunk real_freed_tmp[HEAP_CAP_REAL_CHUNKS] = {0};
+static pog_chunk real_tmp[HEAP_CAP_REAL_CHUNKS] = {0};
 static size_t real_heap_size_words = 64;
 
 int real_heap_expand(size_t words, size_t* alloced_chunks_size, size_t* freed_chunks_size) {
@@ -40,7 +40,7 @@ void pog_real_heap_init() {
     pog_init(heap_start, real_heap_size_words,
              &real_alloced[0], real_heap_size_words * 8,
              &real_freed[0], real_heap_size_words * 8,
-             &real_freed_tmp[0], real_heap_size_words * 8,
+             &real_tmp[0], real_heap_size_words * 8,
              &real_heap_expand);
 
     //HACK: sometimes, sbrk(0) gives back a weird address space; leak two words to properly align brk

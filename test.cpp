@@ -103,6 +103,10 @@ TEST_CASE("GC unused stack pointer") {
     REQUIRE(alloced[0].size == (size_t) 1);
     REQUIRE(freed[0].size == (size_t) 7999);
 
+    pog_gc_collect();
+    REQUIRE(alloced[0].size == (size_t) 1);
+    REQUIRE(freed[0].size == (size_t) 7999);
+
     a = nullptr;
     REQUIRE(alloced[0].size == (size_t) 1);
     REQUIRE(freed[0].size == (size_t) 7999);
@@ -122,6 +126,12 @@ TEST_CASE("GC multiple unused stack pointers") {
     void* a = pog_malloc(1);
     void* b = pog_malloc(1);
     void* c = pog_malloc(1);
+    REQUIRE(alloced[0].size == (size_t) 1);
+    REQUIRE(alloced[1].size == (size_t) 1);
+    REQUIRE(alloced[2].size == (size_t) 1);
+    REQUIRE(freed[0].size == (size_t) 7997);
+
+    pog_gc_collect();
     REQUIRE(alloced[0].size == (size_t) 1);
     REQUIRE(alloced[1].size == (size_t) 1);
     REQUIRE(alloced[2].size == (size_t) 1);
@@ -182,6 +192,13 @@ TEST_CASE("GC pointers in heap without GC root") {
     REQUIRE(alloced[3].size == (size_t) 2);
     REQUIRE(freed[0].size == (size_t) 7992);
 
+    pog_gc_collect();
+    REQUIRE(alloced[0].size == (size_t) 2);
+    REQUIRE(alloced[1].size == (size_t) 2);
+    REQUIRE(alloced[2].size == (size_t) 2);
+    REQUIRE(alloced[3].size == (size_t) 2);
+    REQUIRE(freed[0].size == (size_t) 7992);
+
     b->next = nullptr;
     c = nullptr;
     d = nullptr;
@@ -209,6 +226,51 @@ TEST_CASE("GC pointers in heap without GC root") {
     REQUIRE(freed[0].size == (size_t) 8000);
 }
 
+static char* x;
+static char* y;
+static char* z;
+
+#define STATIC_MEM_CAP 2048
+uintptr_t test_static_mem[STATIC_MEM_CAP];
+
 TEST_CASE("GC static pointers that have been set to null") {
-    //TODO
+    pog_gc_init(&test_static_mem, STATIC_MEM_CAP);
+    pog_gc_mark_static(&x);
+    pog_gc_mark_static(&y);
+    pog_gc_mark_static(&z);
+
+    pog_static_heap_init();
+
+    x = (char*) pog_malloc(1);
+    y = (char*) pog_malloc(1);
+    z = (char*) pog_malloc(1);
+
+    REQUIRE(alloced[0].size == (size_t) 1);
+    REQUIRE(alloced[1].size == (size_t) 1);
+    REQUIRE(alloced[2].size == (size_t) 1);
+    REQUIRE(freed[0].size == (size_t) 7997);
+
+    pog_gc_collect();
+    REQUIRE(alloced[0].size == (size_t) 1);
+    REQUIRE(alloced[1].size == (size_t) 1);
+    REQUIRE(alloced[2].size == (size_t) 1);
+    REQUIRE(freed[0].size == (size_t) 7997);
+
+    x = nullptr;
+    pog_gc_collect();
+    REQUIRE(alloced[0].size == (size_t) 1);
+    REQUIRE(alloced[1].size == (size_t) 1);
+    REQUIRE(freed[0].size == (size_t) 1);
+    REQUIRE(freed[1].size == (size_t) 7997);
+
+    y = nullptr;
+    z = nullptr;
+    pog_gc_collect();
+    REQUIRE(freed[0].size == (size_t) 1);
+    REQUIRE(freed[1].size == (size_t) 1);
+    REQUIRE(freed[2].size == (size_t) 1);
+    REQUIRE(freed[3].size == (size_t) 7997);
+
+    pog_squash();
+    REQUIRE(freed[0].size == (size_t) 8000);
 }

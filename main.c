@@ -19,6 +19,8 @@ int main() {
 
     x = pog_malloc(1);
 
+    DEBUG("%p\n", x);
+
     pog_malloc(80);
     pog_malloc(80);
     pog_malloc(80);
